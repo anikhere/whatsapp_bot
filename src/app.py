@@ -2,6 +2,8 @@ from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 import os
 from dotenv import load_dotenv
+from db import get_db     # <-- ADD THIS
+
 
 # Load environment variables
 load_dotenv()
@@ -16,6 +18,22 @@ def webhook():
     """
     incoming_msg = request.values.get('Body', '').strip()
     sender = request.values.get('From', '')
+    # SAVE MESSAGE INTO DATABASE
+    try:
+        conn = get_db()
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO whatsapp_messages (sender, message)
+            VALUES (%s, %s)
+        """, (sender, incoming_msg))
+        conn.commit()
+        cur.close()
+        conn.close()
+        print("💾 Message saved to DB")
+    except Exception as e:
+        print("❌ DB Error:", e)
+
+    
     
     print(f"📩 Received from {sender}: {incoming_msg}")
     
